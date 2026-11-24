@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AAC&trade;</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .background {
+            background: #ffffff;
+        }
+    </style>
+</head>
+<body id="the-body">
+    <h1 style="font-family: Arial, Helvetica, sans-serif; font-weight: bolder;">Automated Arithmetic Compiler&trade; (AAC&trade;):</h1>
+    <style>
+        .calc-screen {
+            font-family: 'AAC-sans', monospace;
+            font-size: 60px;
+            margin: 0;
+        }
+        .calc-button {
+            height: 80px; 
+            border: 1px solid #000000; 
+            border-radius: 25px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            font-size: 17px; 
+            cursor: pointer;
+            color: #000000;
+        }
+    </style>
+    
+    <div id="calcBackground" style="height: 550px; width: 400px; border: 1px solid #000000; border-radius: 25px; margin: 10px; padding: 25px; background-color: #ffffff;">
+        <!--Screen-->
+        <div style="width: 392px; height: 100px; border: 1px solid #000000; border-radius: 25px; padding: 0px; overflow-y: hidden; overflow-x: scroll; margin-top: 0px; padding-left: 10px; display: flex; flex-direction: column; justify-content: center; background-color: white;">
+            <p id="output" class="calc-screen"></p>
+        </div>
+        <!--Keypad-->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px;">
+            <button id="decimal" class="button calc-button" style="background-color: #b6b6b6;" title="decimal">.</button>
+            <button id="squareRoot" class="button calc-button" style="background-color: #b6b6b6;" title="square root">Sqrt</button>
+            <button id="exponent" class="button calc-button" style="background-color: #b6b6b6;" title="exponent">^</button>
+            <button id="divide" class="button calc-button" style="background-color: #b6b6b6;" title="divide">/</button>
+            
+            <button id="seven" class="button calc-button" style="background-color: #ffffff;;" title="seven">7</button>
+            <button id="eight" class="button calc-button" style="background-color: #ffffff;" title="eight">8</button>
+            <button id="nine" class="button calc-button" style="background-color: #ffffff;" title="nine">9</button>
+            <button id="plus" class="button calc-button" style="background-color: #b6b6b6;" title="plus">+</button>
+            
+            <button id="four" class="button calc-button" style="background-color: #ffffff;" title="four">4</button>
+            <button id="five" class="button calc-button" style="background-color: #ffffff;" title="five">5</button>
+            <button id="six" class="button calc-button" style="background-color: #ffffff;" title="six">6</button>
+            <button id="minus" class="button calc-button" style="background-color: #b6b6b6;" title="minus">-</button>
+            
+            <button id="one" class="button calc-button" style="background-color: #ffffff;" title="one">1</button>
+            <button id="two" class="button calc-button" style="background-color: #ffffff;" title="two">2</button>
+            <button id="three" class="button calc-button" style="background-color: #ffffff;" title="three">3</button>
+            <button id="times" class="button calc-button" style="background-color: #b6b6b6;" title="times">x</button>
+            
+            <button id="clear" class="button calc-button" style="background-color: #b6b6b6;" title="clear">C</button>
+            <button id="zero" class="button calc-button" style="background-color: #ffffff;" title="zero">0</button>
+            <button id="solve" class="button calc-button" style="background-color: #eaeaea;" title="solve">=</button>
+            <button id="negative" class="button calc-button" style="background-color: #b6b6b6;" title="negative">(-)</button>
+        </div>
+        <script>
+            const WORKER_URL = 'https://long-heart-96db.jettie823.workers.dev';
+          
+            const outputScreen = document.getElementById('output');
+            let currentInput = '';
+            let previousInput = '';
+            let operator = null;
+          
+            async function remoteCalculate(a, b, op) {
+              outputScreen.textContent = '...';
+              try {
+                const response = await fetch(WORKER_URL, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ a, b, op }),
+                });
+                const data = await response.json();
+                return data.result;
+              } catch (error) {
+                console.error('Worker error:', error);
+                return '☹️';
+              }
+            }
+          
+            document.querySelectorAll('.button').forEach((button) => {
+              button.addEventListener('click', async () => {
+                const value = button.textContent;
+          
+                if (!isNaN(value)) {
+                  currentInput += value;
+                  outputScreen.textContent = currentInput;
+                } else if (value === '.') {
+                  if (!currentInput.includes('.')) {
+                    currentInput += currentInput === '' ? '0.' : '.';
+                    outputScreen.textContent = currentInput;
+                  }
+                } else if (value === 'C') {
+                  currentInput = '';
+                  previousInput = '';
+                  operator = null;
+                  outputScreen.textContent = '';
+                } else if (value === '=') {
+                  if (currentInput && previousInput && operator) {
+                    const result = await remoteCalculate(
+                      parseFloat(previousInput),
+                      parseFloat(currentInput),
+                      operator
+                    );
+                    outputScreen.textContent = result;
+                    currentInput = result.toString();
+                    previousInput = '';
+                    operator = null;
+                  }
+                } else if (value === 'Sqrt') {
+                  if (currentInput) {
+                    const result = Math.sqrt(parseFloat(currentInput));
+                    outputScreen.textContent = result;
+                    currentInput = result.toString();
+                  }
+                } else if (value === '^') {
+                  if (currentInput) {
+                    previousInput = currentInput;
+                    currentInput = '';
+                    operator = '^';
+                  }
+                } else if (value === '(-)') {
+                  if (currentInput) {
+                    currentInput = (parseFloat(currentInput) * -1).toString();
+                    outputScreen.textContent = currentInput;
+                  }
+                } else {
+                  if (currentInput) {
+                    if (previousInput && operator) {
+                      const result = await remoteCalculate(
+                        parseFloat(previousInput),
+                        parseFloat(currentInput),
+                        operator
+                      );
+                      previousInput = result.toString();
+                    } else {
+                      previousInput = currentInput;
+                    }
+                    currentInput = '';
+                    operator = value === 'x' ? '*' : value;
+                    outputScreen.textContent = previousInput;
+                  }
+                }
+              });
+            });
+          </script>
+    </div>
+    <h2 style="font-family: 'proxima-nova'; font-weight: bold;">Customize:</h2>
+    <p style="font-family: 'proxima-nova';">Main Body: <input type="color" value="#ffffff" id="backgroundColorAAC"></p>
+    <p style="font-family: 'proxima-nova';">Number Keys: <input type="color" value="#ffffff" id="keysColorAAC"></p>
+    <p style="font-family: 'proxima-nova';">Operation Keys: <input type="color" value="#b6b6b6" id="secondaryColorAAC"></p>
+    <p style="font-family: 'proxima-nova';">Solve Key: <input type="color" value="#eaeaea" id="tertiaryColorAAC"></p>
+    <div style="display: flex;">
+        <button id="reset">Reset</button>
+        <button id="save">Save</button>
+    </div>
+    <script src="customize.js"></script>
+    <h2 style="font-family: 'proxima-nova'; font-weight: bold;">About:</h2>
+    <p style="font-family: 'proxima-nova';">The Automated Arithmetic Compiler&trade; was created in November 2026 by Jackson Eli Taylor. It was built as a visual interface for calculations, its main feature being the ability to divide by zero. While it's visIt is entirely different to a calculator. You'll have to ignore the many bugs it's riddled with, my Javascript skills aren't very strong.</p>
+    <h2 style="font-family: 'proxima-nova'; font-weight: bold;">What:</h2>
+    <p style="font-family: 'proxima-nova';">You may notice that when dividing by zero, you may get a different answer for the same equation, but thats normal. The AAC&trade; is built using a lot of variables that influence the final answer, but the answer isn't at all random. If you were to graph all of the answer to each equation, you would see clear correlation</p>
+    <a href="https://venmo.com/u/jacksonelitaylorcom" style="color: #0004ff; font-family: 'proxima-nova';">Tip</a>
+    <p>　</p>
+    <p>　</p>
+    <p>　</p>
+    <div style="width: 100%; font-family: 'Courier New', Courier, monospace; position: fixed; bottom: 0; font-size: 12px; background-color: white; border-top: 1px solid #9a9a9a; ">
+        <div style="width: 100%; font-family: 'proxima-nova'; position: fixed; bottom: 0; font-size: 12px; background-color: white; border-top: 1px solid #9a9a9a; ">
+            <p><span id="versi">?</span> updated <span id="updated">--/--/----</span> | <a href="https://jacksonelitaylor.com" style="color: #0004ff;">Made By Jackson</a> | <a href="mailto:info@jacksonelitaylor.com" style="color: #0004ff;">info@jacksonelitaylor.com</a> | Made without AI | Last login: <span id="time">-</span> | <a href="https://jacksonelitaylor.com/feedback.html" style="color: #0004ff;">Feedback</a> | <a style="color: #0004ff;" href="https://www.venmo.com/u/jacksonelitaylorcom">Send me money</a> | My IP: <span style="color: #0004ff; text-decoration: underline; cursor: pointer;" id="ctr">Reveal</span></p>
+        </div>
+</body>
+<script>
+    var version = document.getElementById('versi');
+    var updated = document.getElementById('updated');
+    fetch('https://jacksonelitaylor.pages.dev/version.json')
+        .then(response => response.json())
+        .then(data => {
+            version.textContent = data.version || '?';
+            updated.textContent = data.updated || '--/--/----';
+        })
+        .catch(error => console.error('Error fetching version data:', error));
+    document.getElementById('ctr').addEventListener('click', function() {
+        fetch('https://api.ipify.org?format=json')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('ctr').textContent = data.ip;
+                document.getElementById('ctr').style = '';
+            })
+            .catch(error => {
+                console.error('Error fetching IP address:', error);
+                document.getElementById('ctr').textContent = 'Failed 😕';
+                document.getElementById('ctr').style = '';
+            });
+    });
+        window.onload = function() {
+        var lastLogin = localStorage.getItem('lastLogin');
+        var currentTime = new Date().getTime();
+        if (lastLogin) {
+            var timeDiff = currentTime - lastLogin;
+            var seconds = Math.floor(timeDiff / 1000);
+            document.getElementById('time').textContent = seconds + ' seconds ago';
+        } else {
+            document.getElementById('time').textContent = '-';
+        }
+        localStorage.setItem('lastLogin', currentTime);
+    }; 
+</script>
